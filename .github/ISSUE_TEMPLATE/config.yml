@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Grup Chat Tim
+    url: https://github.com/<username>/Geodesic#readme
+    about: Pertanyaan cepat & koordinasi harian — tidak perlu buat Issue.
+  - name: 📖 Dokumentasi Arsitektur
+    url: https://github.com/<username>/Geodesic/blob/main/docs/ARSITEKTUR.md
+    about: Penjelasan mendalam cara kerja setiap folder & konsep fisikanya.
+  - name: 🤝 Panduan Kontribusi
+    url: https://github.com/<username>/Geodesic/blob/main/CONTRIBUTING.md
+    about: Cara setup, alur Git, dan aturan kode — untuk anggota baru.

@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Geodesik · Dashboard Kalkulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --accent: #4fd8ff; }
+    body { font-family: 'Space Grotesk', system-ui, sans-serif; background: #04060c; color: #e2e8f0; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+    .panel { background: rgba(6,10,20,.78); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.09); border-radius: 14px; }
+    .lbl { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #7c8aa5; }
+    .accent { color: var(--accent); }
+    .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 3px 0; font-size: 13px; }
+    .row span:first-child { color: #93a1b8; }
+    input[type=range] { width: 100%; accent-color: var(--accent); }
+    .card { transition: transform 0.2s; }
+    .card:hover { transform: translateY(-2px); }
+    .formula { font-family: 'JetBrains Mono', monospace; background: rgba(79,216,255,.08); border: 1px solid rgba(79,216,255,.2); border-radius: 8px; padding: 12px 16px; font-size: 14px; color: #4fd8ff; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <!-- Header -->
+  <header class="mb-8">
+    <div class="flex items-center gap-3 mb-2">
+      <h1 class="text-2xl font-bold tracking-tight">Geodesik<span class="accent">.</span></h1>
+      <span class="text-xs panel px-2 py-1">Dashboard Kalkulator</span>
+    </div>
+    <p class="text-sm text-slate-400 max-w-2xl">
+      Kalkulator pesawat luar angkasa interaktif — hitung penghematan bahan bakar
+      menggunakan <strong class="accent">Efek Oberth</strong> dan
+      <strong class="accent">gravitational slingshot</strong>.
+    </p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-6xl">
+
+    <!-- Efek Oberth Calculator -->
+    <section class="panel p-6 card">
+      <h2 class="text-lg font-bold mb-1">⚡ Efek Oberth</h2>
+      <p class="text-xs text-slate-500 mb-4">
+        Burn di titik tercepat (periapsis) menghasilkan energi kinetik lebih besar.
+      </p>
+
+      <div class="formula mb-4">
+        KE = ½mv² &nbsp;→&nbsp; ΔKE = m · Δv · (v + Δv/2)
+      </div>
+
+      <div class="space-y-3 mb-4">
+        <div>
+          <div class="row"><span>Massa roket</span><b class="mono accent"><span id="obMass">1000</span> kg</b></div>
+          <input type="range" id="obMassSlider" min="300" max="5000" step="50" value="1000">
+        </div>
+        <div>
+          <div class="row"><span>Delta-v burn</span><b class="mono accent"><span id="obDv">1.00</span> km/s</b></div>
+          <input type="range" id="obDvSlider" min="0.1" max="5" step="0.1" value="1">
+        </div>
+        <div>
+          <div class="row"><span>Kecepatan di periapsis</span><b class="mono accent"><span id="obVperi">10.00</span> km/s</b></div>
+          <input type="range" id="obVperiSlider" min="1" max="60" step="0.5" value="10">
+        </div>
+        <div>
+          <div class="row"><span>Kecepatan di apoapsis</span><b class="mono accent"><span id="obVapo">1.00</span> km/s</b></div>
+          <input type="range" id="obVapoSlider" min="0.5" max="20" step="0.5" value="1">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="bg-cyan-500/10 border border-cyan-500/30 rounded-lg p-3">
+          <div class="lbl mb-1">Burn di Periapsis</div>
+          <div class="mono text-xl accent" id="obKePeri">—</div>
+          <div class="text-xs text-slate-500">ΔKE yang dihasilkan</div>
+        </div>
+        <div class="bg-white/5 border border-white/10 rounded-lg p-3">
+          <div class="lbl mb-1">Burn di Apoapsis</div>
+          <div class="mono text-xl text-slate-300" id="obKeApo">—</div>
+          <div class="text-xs text-slate-500">ΔKE yang dihasilkan</div>
+        </div>
+      </div>
+
+      <div class="text-center">
+        <span class="text-2xl font-bold accent" id="obRatio">—</span>
+        <span class="text-sm text-slate-400"> kali lebih efisien di periapsis</span>
+      </div>
+    </section>
+
+    <!-- Tsiolkovsky / Fuel Calculator -->
+    <section class="panel p-6 card">
+      <h2 class="text-lg font-bold mb-1">🚀 Persamaan Roket Tsiolkovsky</h2>
+      <p class="text-xs text-slate-500 mb-4">
+        Hubungan antara Δv, impuls spesifik, dan massa propelan.
+      </p>
+
+      <div class="formula mb-4">
+        Δv = Isp · g₀ · ln(m₀/m₁) &nbsp;→&nbsp; m_propelan = m_kering · (e^(Δv/(Isp·g₀)) - 1)
+      </div>
+
+      <div class="space-y-3 mb-4">
+        <div>
+          <div class="row"><span>Massa kering roket</span><b class="mono accent"><span id="tsMass">1000</span> kg</b></div>
+          <input type="range" id="tsMassSlider" min="300" max="5000" step="50" value="1000">
+        </div>
+        <div>
+          <div class="row"><span>Impuls spesifik (Isp)</span><b class="mono accent"><span id="tsIsp">450</span> s</b></div>
+          <input type="range" id="tsIspSlider" min="250" max="465" step="5" value="450">
+        </div>
+        <div>
+          <div class="row"><span>Δv slingshot</span><b class="mono accent"><span id="tsDv1">6.60</span> km/s</b></div>
+          <input type="range" id="tsDv1Slider" min="1" max="15" step="0.1" value="6.6">
+        </div>
+        <div>
+          <div class="row"><span>Δv langsung (tanpa slingshot)</span><b class="mono accent"><span id="tsDv2">12.00</span> km/s</b></div>
+          <input type="range" id="tsDv2Slider" min="1" max="25" step="0.1" value="12">
+        </div>
+      </div>
+
+      <div class="space-y-2 mb-3">
+        <div class="text-xs text-slate-400">Dengan slingshot</div>
+        <div class="h-3 rounded bg-white/10 overflow-hidden">
+          <div id="tsBarA" class="h-full rounded transition-all" style="background:var(--accent); width:30%"></div>
+        </div>
+        <div class="mono row"><span id="tsFuelALabel">—</span><b id="tsFuelA">—</b></div>
+
+        <div class="text-xs text-slate-400 mt-2">Langsung (tanpa slingshot)</div>
+        <div class="h-3 rounded bg-white/10 overflow-hidden">
+          <div id="tsBarB" class="h-full rounded bg-slate-400 transition-all" style="width:80%"></div>
+        </div>
+        <div class="mono row"><span id="tsFuelBLabel">—</span><b id="tsFuelB">—</b></div>
+      </div>
+
+      <div id="tsSaved" class="text-sm mt-3 p-2 rounded bg-cyan-500/10 border border-cyan-500/20"></div>
+    </section>
+
+    <!-- Penjelasan Efek Oberth -->
+    <section class="panel p-6 card lg:col-span-2">
+      <h2 class="text-lg font-bold mb-3">📐 Mengapa Burn di Periapsis Lebih Efisien?</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-300">
+        <div>
+          <h3 class="font-bold accent mb-1">1. Energi Kinetik Kuadratik</h3>
+          <p>KE = ½mv². Karena v dikuadratkan, menambah 1 km/s saat v sudah
+          tinggi (periapsis) menghasilkan ΔKE jauh lebih besar daripada
+          saat v rendah (apoapsis).</p>
+        </div>
+        <div>
+          <h3 class="font-bold accent mb-1">2. Energi Propelan Buang</h3>
+          <p>Gas buang yang ditinggalkan di dalam sumur gravitasi memiliki
+          energi kinetik yang sangat rendah. Surplus energinya ditransfer
+          kembali ke badan roket.</p>
+        </div>
+        <div>
+          <h3 class="font-bold accent mb-1">3. Aplikasi Nyata</h3>
+          <p>Misi ruang angkasa modern selalu menyalakan mesin saat berada
+          di periapsis orbit. Contoh: Hohmann transfer dimulai dengan burn
+          di LEO (300 km, v ≈ 7.7 km/s), bukan di orbit tinggi.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-8 text-center text-xs text-slate-600">
+    <p>Data planet: <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/" class="underline hover:text-slate-400">NASA NSSDCA Planetary Fact Sheet</a></p>
+    <p class="mt-1">Geodesik · NASA Space Apps Challenge</p>
+  </footer>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const g0 = 9.80665;
+
+    function formatEnergy(j) {
+      if (j >= 1e12) return `${(j/1e12).toFixed(2)} TJ`;
+      if (j >= 1e9) return `${(j/1e9).toFixed(2)} GJ`;
+      if (j >= 1e6) return `${(j/1e6).toFixed(2)} MJ`;
+      if (j >= 1e3) return `${(j/1e3).toFixed(2)} kJ`;
+      return `${j.toFixed(2)} J`;
+    }
+
+    function updateOberth() {
+      const mass = +$('obMassSlider').value;
+      const dv = +$('obDvSlider').value * 1000;
+      const vp = +$('obVperiSlider').value * 1000;
+      const va = +$('obVapoSlider').value * 1000;
+
+      $('obMass').textContent = mass;
+      $('obDv').textContent = (dv/1000).toFixed(2);
+      $('obVperi').textContent = (vp/1000).toFixed(2);
+      $('obVapo').textContent = (va/1000).toFixed(2);
+
+      const dkePeri = mass * dv * (vp + dv/2);
+      const dkeApo = mass * dv * (va + dv/2);
+      const ratio = dkePeri / dkeApo;
+
+      $('obKePeri').textContent = formatEnergy(dkePeri);
+      $('obKeApo').textContent = formatEnergy(dkeApo);
+      $('obRatio').textContent = ratio.toFixed(1) + '×';
+    }
+
+    function propellant(dv, isp, mDry) {
+      return mDry * (Math.exp(dv / (isp * g0)) - 1);
+    }
+
+    function updateTsiolkovsky() {
+      const mass = +$('tsMassSlider').value;
+      const isp = +$('tsIspSlider').value;
+      const dv1 = +$('tsDv1Slider').value * 1000;
+      const dv2 = +$('tsDv2Slider').value * 1000;
+
+      $('tsMass').textContent = mass;
+      $('tsIsp').textContent = isp;
+      $('tsDv1').textContent = (dv1/1000).toFixed(2);
+      $('tsDv2').textContent = (dv2/1000).toFixed(2);
+
+      const fuelA = propellant(dv1, isp, mass);
+      const fuelB = propellant(dv2, isp, mass);
+      const mx = Math.max(fuelA, fuelB);
+
+      $('tsBarA').style.width = `${(fuelA/mx*100)}%`;
+      $('tsBarB').style.width = `${(fuelB/mx*100)}%`;
+
+      const fmt = n => (n/1000).toFixed(2);
+      $('tsFuelALabel').textContent = `Δv ${(dv1/1000).toFixed(2)} km/s`;
+      $('tsFuelA').textContent = `${fmt(fuelA)} ton`;
+      $('tsFuelBLabel').textContent = `Δv ${(dv2/1000).toFixed(2)} km/s`;
+      $('tsFuelB').textContent = `${fmt(fuelB)} ton`;
+
+      if (fuelB > fuelA) {
+        const saved = fuelB - fuelA;
+        const pct = ((1 - fuelA/fuelB) * 100).toFixed(0);
+        $('tsSaved').innerHTML = `Slingshot menghemat <b class="accent">${fmt(saved)} ton</b> propelan (<b class="accent">${pct}%</b>).`;
+      } else {
+        $('tsSaved').innerHTML = `Rute slingshot <b class="text-red-300">lebih boros</b> dalam skenario ini.`;
+      }
+    }
+
+    // Event listeners
+    ['obMassSlider','obDvSlider','obVperiSlider','obVapoSlider'].forEach(id =>
+      $(id).addEventListener('input', updateOberth)
+    );
+    ['tsMassSlider','tsIspSlider','tsDv1Slider','tsDv2Slider'].forEach(id =>
+      $(id).addEventListener('input', updateTsiolkovsky)
+    );
+
+    // Init
+    updateOberth();
+    updateTsiolkovsky();
+  </script>
+</body>
+</html>

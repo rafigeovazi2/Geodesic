@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Geodesik · Simulator Ruang-Waktu Interaktif</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body class="text-slate-200 overflow-hidden">
+<canvas id="scene" class="fixed inset-0 w-full h-full block"></canvas>
+
+<div class="fixed inset-0 pointer-events-none flex flex-col p-3 gap-3" style="z-index:10">
+  <!-- HEADER -->
+  <header class="pointer-events-auto flex flex-wrap items-center gap-2">
+    <div class="panel px-4 py-2">
+      <div class="text-base font-bold tracking-tight">Geodesik<span class="accent">.</span></div>
+      <div class="lbl">Gravitasi: gaya atau geometri?</div>
+    </div>
+    <div class="panel p-1 seg flex">
+      <button id="btnNewton" class="on" title="Gravitasi = gaya tarik (F=GMm/r²)">Newton</button>
+      <button id="btnEinstein" title="Gravitasi = kelengkungan ruang-waktu">Einstein</button>
+    </div>
+    <div class="panel px-3 py-2 flex items-center gap-2 text-sm">
+      <span class="lbl">Kamera</span>
+      <select id="focus">
+        <option value="sun">Tata surya</option>
+        <option value="rocket">Ikuti roket</option>
+        <option value="target">Ikuti planet tujuan</option>
+      </select>
+    </div>
+    <div class="ml-auto flex gap-2 lg:hidden">
+      <button class="chip panel" onclick="document.getElementById('panelL').classList.toggle('hidden')">Kontrol</button>
+      <button class="chip panel" onclick="document.getElementById('panelR').classList.toggle('hidden')">Data</button>
+    </div>
+  </header>
+
+  <div class="flex-1 min-h-0 flex justify-between gap-3">
+    <!-- LEFT PANEL -->
+    <aside id="panelL" class="pointer-events-auto panel p-4 w-80 max-w-[88vw] overflow-y-auto hidden lg:block">
+      <div class="lbl mb-1">Cara pandang</div>
+      <p id="modeText" class="text-sm leading-relaxed text-slate-300"></p>
+      <p class="text-xs text-slate-500 mt-2">Lintasan roket sama persis di kedua mode. Yang berbeda hanya cara menjelaskannya.</p>
+
+      <hr class="border-white/10 my-4">
+      <div class="lbl mb-2">Misi: dari Bumi ke</div>
+      <div id="targets" class="flex flex-wrap gap-2 mb-4"></div>
+
+      <div class="mb-3">
+        <div class="row"><span>Δv burn di orbit Bumi (LEO)</span><b class="mono accent"><span id="dvVal"></span> km/s</b></div>
+        <input id="dv" type="range" min="6.35" max="8.00" step="0.01" value="6.60">
+      </div>
+      <div class="mb-3">
+        <div class="row"><span>Titik bidik di <span class="tn"></span></span><b class="mono accent"><span id="offVal"></span> rb km</b></div>
+        <input id="off" type="range" min="-1" max="1" step="0.002" value="0.2">
+        <div class="flex justify-between text-[11px] text-slate-500"><span>lewat depan</span><span>lewat belakang</span></div>
+      </div>
+      <div class="mb-3">
+        <div class="row"><span>Massa kering roket</span><b class="mono accent"><span id="mVal"></span> kg</b></div>
+        <input id="mdry" type="range" min="300" max="5000" step="50" value="1000">
+      </div>
+      <div class="mb-3">
+        <div class="row"><span>Impuls spesifik mesin (Isp)</span><b class="mono accent"><span id="ispVal"></span> s</b></div>
+        <input id="isp" type="range" min="250" max="465" step="5" value="450">
+      </div>
+
+      <div class="lbl mb-2 mt-4">Skenario</div>
+      <div id="presets" class="flex flex-wrap gap-2"></div>
+
+      <hr class="border-white/10 my-4">
+      <div class="lbl mb-2">Flyby dilihat dari <span class="tn"></span></div>
+      <canvas id="inset" width="560" height="380" class="w-full rounded-lg bg-black/40 border border-white/10"></canvas>
+      <p id="insetNote" class="text-xs text-slate-500 mt-2"></p>
+    </aside>
+
+    <!-- RIGHT PANEL -->
+    <aside id="panelR" class="pointer-events-auto panel p-4 w-80 max-w-[88vw] overflow-y-auto hidden lg:block">
+      <div id="banner" class="hidden mb-3 text-sm rounded-lg border border-red-400/40 bg-red-500/10 text-red-200 px-3 py-2"></div>
+
+      <div class="flex gap-1 mb-3">
+        <button class="tab-btn active" data-tab="telemetry">Telemetri</button>
+        <button class="tab-btn" data-tab="slingshot">Slingshot</button>
+        <button class="tab-btn" data-tab="oberth">Oberth</button>
+      </div>
+
+      <!-- Tab: Telemetri -->
+      <div id="tab-telemetry" class="tab-content active">
+        <div class="lbl mb-1">Data misi real-time</div>
+        <div class="mono">
+          <div class="row"><span>Waktu misi</span><b id="tMission"></b></div>
+          <div class="row"><span>Jarak ke Matahari</span><b id="tRs"></b></div>
+          <div class="row"><span>Jarak ke <span class="tn"></span></span><b id="tRj"></b></div>
+          <div class="row"><span>Kecepatan (thd Matahari)</span><b id="tV" class="accent"></b></div>
+        </div>
+        <canvas id="spark" width="560" height="150" class="w-full mt-2 rounded-lg bg-black/40 border border-white/10"></canvas>
+        <div class="text-[11px] text-slate-500 mt-1">Kecepatan roket terhadap Matahari sepanjang misi</div>
+
+        <div id="telNewton" class="mt-4">
+          <div class="lbl mb-1">Gaya gravitasi pada roket</div>
+          <div class="formula-box mb-2">F = G·M·m / r²</div>
+          <div class="mono">
+            <div class="row"><span style="color:#ffd27a">Matahari</span><b id="fSun"></b></div>
+            <div class="row"><span style="color:#ff9f5a" class="tn"></span><b id="fJup"></b></div>
+          </div>
+        </div>
+
+        <div id="telEinstein" class="mt-4 hidden">
+          <div class="lbl mb-1">Jam relativistik</div>
+          <div class="formula-box mb-2">dτ/dt ≈ 1 − Φ/c² − v²/2c²</div>
+          <div class="mono">
+            <div class="row"><span>Jam jauh (pengamat)</span><b id="cFar"></b></div>
+            <div class="row"><span>Jam roket</span><b id="cRocket" class="accent"></b></div>
+            <div class="row"><span>Tertinggal</span><b id="cLag"></b></div>
+            <div class="row"><span>Laju perlambatan</span><b id="cRate"></b></div>
+          </div>
+          <div class="text-[11px] text-slate-500 mt-1">Angka jam itu riil. Kedalaman sumur pada grid diperbesar agar terlihat.</div>
+        </div>
+      </div>
+
+      <!-- Tab: Slingshot -->
+      <div id="tab-slingshot" class="tab-content">
+        <div class="lbl mb-1">Hasil gravitational slingshot</div>
+        <div class="mono">
+          <div class="row"><span>Jarak terdekat</span><b id="rPeri"></b></div>
+          <div class="row"><span>Sudut belok</span><b id="rTurn"></b></div>
+          <div class="row"><span>Thd <span class="tn"></span>: masuk / keluar</span><b id="rRel"></b></div>
+          <div class="row"><span>Thd Matahari: masuk / keluar</span><b id="rHel"></b></div>
+          <div class="row"><span>Kecepatan gratis</span><b id="rGain" class="accent"></b></div>
+          <div class="row"><span>Orbit akhir</span><b id="rDest" class="text-right"></b></div>
+        </div>
+
+        <hr class="border-white/10 my-4">
+        <div class="lbl mb-1">Bahan bakar · Tsiolkovsky</div>
+        <div class="formula-box mb-2">Δv = Isp·g₀·ln(m₀/m₁)</div>
+        <div class="text-xs text-slate-400 mb-1">Dengan slingshot</div>
+        <div class="h-2.5 rounded-full bg-white/10 overflow-hidden"><div id="barA" class="h-full rounded-full transition-all duration-300" style="background:var(--accent)"></div></div>
+        <div class="mono row"><span id="fuelAdv"></span><b id="fuelA"></b></div>
+        <div class="text-xs text-slate-400 mb-1 mt-2">Langsung, tanpa slingshot (energi akhir sama)</div>
+        <div class="h-2.5 rounded-full bg-white/10 overflow-hidden"><div id="barB" class="h-full rounded-full bg-slate-400 transition-all duration-300"></div></div>
+        <div class="mono row"><span id="fuelBdv"></span><b id="fuelB"></b></div>
+        <div id="fuelSave" class="text-sm mt-2"></div>
+      </div>
+
+      <!-- Tab: Oberth -->
+      <div id="tab-oberth" class="tab-content">
+        <div class="lbl mb-1">Efek Oberth</div>
+        <div class="formula-box mb-2">KE = ½mv²  →  ΔKE = m·Δv·(v + Δv/2)</div>
+        <p class="text-xs text-slate-400 mb-3">Burn di periapsis (titik tercepat) menghasilkan ΔKE lebih besar.</p>
+        <div class="mono">
+          <div class="row"><span>Burn di LEO (dalam sumur)</span><b id="obLow"></b></div>
+          <div class="row"><span>Burn setelah lepas dari Bumi</span><b id="obHigh"></b></div>
+        </div>
+        <hr class="border-white/10 my-3">
+        <div class="lbl mb-2">Detail</div>
+        <div class="mono text-sm">
+          <div class="row"><span>Kecepatan orbit LEO</span><b id="obVleo"></b></div>
+          <div class="row"><span>Kecepatan lepas Bumi</span><b id="obVesc"></b></div>
+          <div class="row"><span>v-infinity saat lepas</span><b id="obVinf" class="accent"></b></div>
+          <div class="row"><span>KE di LEO (per kg)</span><b id="obKeLeo"></b></div>
+          <div class="row"><span>KE setelah burn (per kg)</span><b id="obKeAfter"></b></div>
+          <div class="row"><span>Rasio efisiensi</span><b id="obEfficiency" class="accent"></b></div>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-600 mt-4 leading-relaxed">
+        Model: Matahari diam di pusat, delapan planet di orbit lingkaran sebidang
+        dengan jarak, massa, dan periode asli (NASA NSSDCA). Roket diintegrasi
+        dengan RK4 langkah adaptif. Ukuran planet dan roket tidak berskala.
+      </p>
+    </aside>
+  </div>
+
+  <!-- TIMELINE -->
+  <footer class="pointer-events-auto panel px-4 py-2 mx-auto w-full max-w-3xl flex items-center gap-3">
+    <button id="play" class="chip w-20">Jeda</button>
+    <button id="reset" class="chip">Ulang</button>
+    <input id="scrub" type="range" min="0" max="1000" value="0" class="flex-1">
+    <select id="speed">
+      <option value="0.5">0,5×</option>
+      <option value="1" selected>1×</option>
+      <option value="3">3×</option>
+      <option value="10">10×</option>
+    </select>
+    <span id="warp" class="mono text-xs text-slate-400 w-28 text-right"></span>
+  </footer>
+</div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
